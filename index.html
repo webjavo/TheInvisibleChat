@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>The Invisible Chat — Sign in</title>
+<style>
+  :root{--bg:#f3f6fb;--card:#fff;--brand:#0b61d6;--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);display:flex;align-items:center;justify-content:center;height:100vh}
+  .card{width:380px;background:var(--card);border-radius:14px;padding:22px;box-shadow:0 10px 30px rgba(11,97,214,0.08);text-align:center}
+  h1{margin:0 0 10px;font-size:20px;color:#0f172a}
+  .avatar{width:110px;height:110px;border-radius:999px;background:#e6eefc;margin:0 auto;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+  input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:12px;font-size:14px}
+  label.checkbox{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}
+  button{width:100%;margin-top:14px;background:var(--brand);color:#fff;border:0;padding:11px;border-radius:10px;font-weight:600;cursor:pointer}
+  .oath{font-size:12px;color:var(--muted);height:86px;overflow:auto;padding:10px;border-radius:8px;border:1px dashed #e6e9ef;margin-top:12px;text-align:left;background:#fbfdff}
+  .popup{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:8px;display:none;z-index:60}
+  .loader{display:inline-block;border:4px solid rgba(255,255,255,0.18);border-top-color:#fff;border-radius:50%;width:18px;height:18px;animation:spin 1s linear infinite;vertical-align:middle;margin-left:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .small{font-size:13px;color:var(--muted);margin-top:8px}
+  .hint{font-size:12px;color:#334155;margin-top:6px}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+  <div class="popup" id="popup"></div>
+
+  <div class="card" role="main">
+    <h1>The Invisible Chat — Sign in</h1>
+
+    <div class="avatar" id="avatar" title="Click to add profile picture">
+      <span id="avatarLabel">Add photo</span>
+      <img id="avatarImg" src="" alt="" style="display:none">
+    </div>
+
+    <input id="email" type="email" placeholder="Your email (required)" />
+    <input id="agentKey" type="password" placeholder="Agent key 🗝️ (required)" />
+
+    <div class="oath" id="oath">
+      I swear in the name of El De’ah, the God of all knowledge and truth, that I will keep the secrets entrusted to me. I will not reveal them, I will not speak them, I will not use them as a spy or in any form of betrayal. If I ever break this oath, let El De’ah judge my actions, and let the knowledge of these secrets become distant from my mind, as though they were never part of my thoughts. This oath I take in sincerity and truth, before God who sees all and knows all.
+    </div>
+
+    <label class="checkbox"><input type="checkbox" id="agree"/> I accept the oath</label>
+
+    <div class="hint">Agent key example: <strong>£4890##Ais4apple51#</strong></div>
+
+    <button id="submitBtn">Submit</button>
+
+    <div class="small">You will be guided to the chat room after verification</div>
+
+    <input id="filein" type="file" accept="image/*"/>
+  </div>
+
+<script>
+/* Configuration */
+const AGENT_KEY = '£4890##Ais4apple51#';
+const popup = (msg, time=2500) => {
+  const p = document.getElementById('popup'); p.textContent = msg; p.style.display='block';
+  setTimeout(()=>p.style.display='none', time);
+};
+
+/* avatar */
+const fileIn = document.getElementById('filein');
+const avatar = document.getElementById('avatar');
+const avatarImg = document.getElementById('avatarImg');
+const avatarLabel = document.getElementById('avatarLabel');
+
+avatar.addEventListener('click', ()=> fileIn.click());
+fileIn.addEventListener('change',(e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> {
+    avatarImg.src = r.result; avatarImg.style.display='block'; avatarLabel.style.display='none';
+    localStorage.setItem('invisible_profilePic', r.result);
+  };
+  r.readAsDataURL(f);
+});
+
+/* restore avatar */
+window.addEventListener('load', ()=>{
+  const pic = localStorage.getItem('invisible_profilePic');
+  if(pic){ avatarImg.src = pic; avatarImg.style.display='block'; avatarLabel.style.display='none'; }
+});
+
+/* crypto helpers (derive key from email+agentKey using PBKDF2) */
+async function deriveKey(email, agentKey) {
+  const salt = new TextEncoder().encode(email); // per-user salt
+  const pw = new TextEncoder().encode(agentKey);
+  const baseKey = await crypto.subtle.importKey('raw', pw, 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt, iterations:250000, hash:'SHA-256'},
+    baseKey,
+    {name:'AES-GCM', length:256},
+    false,
+    ['encrypt','decrypt']
+  );
+}
+
+/* on submit */
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('email').value.trim();
+  const key = document.getElementById('agentKey').value.trim();
+  const agree = document.getElementById('agree').checked;
+  if(!email) return popup('Please enter your email.');
+  if(!key) return popup('Please enter the agent key.');
+  if(!agree) return popup('Please accept the oath to continue.');
+  if(key !== AGENT_KEY) return popup('Wrong Agent Key 🗝️ — check and retry.');
+
+  // derive & store a lightweight auth token in localStorage (not server auth — prototype)
+  popup('Verifying...'); document.getElementById('submitBtn').disabled=true;
+  try {
+    const derived = await deriveKey(email, key);
+    // export raw key as an auth token (ArrayBuffer -> base64)
+    const raw = await crypto.subtle.exportKey('raw', derived);
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(raw)));
+    localStorage.setItem('invisible_auth', JSON.stringify({email, token:b64}));
+    localStorage.setItem('invisible_agentKey_hint', key.slice(0,4)); // not the key, just a hint
+    // store profile pic already saved earlier
+    setTimeout(()=> {
+      window.location.href = 'areafour.html';
+    },2000);
+  } catch(err) {
+    console.error(err); popup('Crypto error — try again.');
+  } finally { document.getElementById('submitBtn').disabled=false; }
+});
+</script>
+</body>
+</html>
