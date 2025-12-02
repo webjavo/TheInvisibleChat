@@ -18,35 +18,69 @@ const db = firebase.database();
 
 // -------------------------------
 // 2. LOGIN & REGISTER
-// -------------------------------
-function login() {
-  let email = email.value;
-  let pass = password.value;
+// -------------------------------// Agent key
+const SECRET_KEY = "£4890##Ais4apple51#";
 
-  auth.signInWithEmailAndPassword(email, pass)
-    .then(() => enterChat())
-    .catch(e => alert("Login failed: " + e.message));
+// login handler
+function attemptLogin() {
+    const emailVal = email.value.trim();
+    const keyVal = agentKey.value.trim();
+    const oath = document.getElementById("oathCheck").checked;
+
+    if (!emailVal) return popup("Enter your email.");
+    if (!keyVal) return popup("Enter the agent key.");
+    if (keyVal !== SECRET_KEY) return popup("❌ Wrong agent key.");
+    if (!oath) return popup("Please accept the oath to continue.");
+
+    // Now perform Firebase login/registration
+    auth.signInWithEmailAndPassword(emailVal, "defaultpass123")
+        .then(() => {
+            saveProfile();
+            enterChat();
+        })
+        .catch(() => {
+            // If user doesn't exist, create it
+            auth.createUserWithEmailAndPassword(emailVal, "defaultpass123")
+                .then(() => {
+                    saveProfile();
+                    enterChat();
+                })
+                .catch(err => popup("Login Error: " + err.message));
+        });
 }
 
-function register() {
-  let email = email.value;
-  let pass = password.value;
-
-  auth.createUserWithEmailAndPassword(email, pass)
-    .then(() => enterChat())
-    .catch(e => alert("Register failed: " + e.message));
+// professional popup
+function popup(msg) {
+    let box = document.createElement("div");
+    box.className = "popup";
+    box.innerHTML = `<p>${msg}</p>`;
+    document.body.appendChild(box);
+    setTimeout(() => box.remove(), 2500);
 }
 
-function logout() {
-  auth.signOut();
-  location.reload();
+// Load profile preview
+function loadProfile(event) {
+    let file = event.target.files[0];
+    let reader = new FileReader();
+    reader.onload = e => {
+        profilePreview.src = e.target.result;
+        localStorage.setItem("profilePhoto", e.target.result);
+    };
+    reader.readAsDataURL(file);
 }
 
-function enterChat() {
-  document.getElementById("auth-screen").classList.add("hidden");
-  document.getElementById("chat-screen").classList.remove("hidden");
-  setupRTC();
+// Save profile image so others can see your avatar name
+function saveProfile() {
+    const emailVal = email.value.trim();
+    const pp = localStorage.getItem("profilePhoto") || "";
+
+    db.ref("profiles/" + auth.currentUser.uid).set({
+        email: emailVal,
+        photo: pp
+    });
 }
+
+
 
 // -------------------------------
 // 3. WEBRTC INITIALIZATION

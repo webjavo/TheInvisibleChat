@@ -8,13 +8,26 @@
 </head>
 
 <body>
-<div id="auth-screen" class="center-box">
-    <h2>Login</h2>
+  <div id="auth-screen" class="center-box">
+    <h2>The Invisible Chat</h2>
+
+    <div class="profile-pic-container">
+        <img id="profilePreview" src="default.jpg" alt="Profile" />
+        <input type="file" id="profileInput" accept="image/*" onchange="loadProfile(event)">
+    </div>
+
     <input id="email" type="email" placeholder="Email" />
-    <input id="password" type="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <p onclick="register()">Create account</p>
+    <input id="agentKey" type="text" placeholder="Agent Key" />
+
+    <div class="oath-box">
+        <input type="checkbox" id="oathCheck" />
+        <label>I agree to the secret oath</label>
+    </div>
+
+    <button onclick="attemptLogin()">Enter</button>
 </div>
+
+
 
 <div id="chat-screen" class="hidden">
     <header>
