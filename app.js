@@ -1,15 +1,16 @@
 // -------------------------------
 // 1. FIREBASE SETUP
-// -------------------------------
+// -------------------------------// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR KEY",
-  authDomain: "YOUR DOMAIN",
-  databaseURL: "YOUR DB URL",
-  projectId: "YOUR ID",
-  storageBucket: "YOUR BUCKET",
-  messagingSenderId: "YOUR SENDER",
-  appId: "YOUR APPID"
+  apiKey: "AIzaSyD6T_Vasbdw4oA657ywJcbRVwoZVpIBH3U",
+  authDomain: "the-invisible-chat.firebaseapp.com",
+  projectId: "the-invisible-chat",
+  storageBucket: "the-invisible-chat.firebasestorage.app",
+  messagingSenderId: "930784219484",
+  appId: "1:930784219484:web:9c3c63b8190f6ea2b83199",
+  measurementId: "G-JVHL0SBR10"
 };
+
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
