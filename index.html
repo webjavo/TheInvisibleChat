@@ -1,58 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ShadowChat</title>
-<link rel="stylesheet" href="style.css" />
+    <title>The Invisible Chat – Login</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 
 <body>
-  <div id="auth-screen" class="center-box">
+
+<div class="login-box">
     <h2>The Invisible Chat</h2>
 
-    <div class="profile-pic-container">
-        <img id="profilePreview" src="default.jpg" alt="Profile" />
-        <input type="file" id="profileInput" accept="image/*" onchange="loadProfile(event)">
+    <!-- Profile Photo -->
+    <div class="profile-pic-area">
+        <img id="profilePreview" src="default.jpg" alt="profile">
+        <input type="file" id="profileInput" accept="image/*" onchange="loadPhoto(event)">
     </div>
 
-    <input id="email" type="email" placeholder="Email" />
-    <input id="agentKey" type="text" placeholder="Agent Key" />
+    <!-- Email -->
+    <input type="email" id="email" placeholder="Email">
 
-    <div class="oath-box">
-        <input type="checkbox" id="oathCheck" />
-        <label>I agree to the secret oath</label>
-    </div>
+    <!-- Agent Key -->
+    <input type="password" id="agentKey" placeholder="Agent Key">
 
-    <button onclick="attemptLogin()">Enter</button>
+    <!-- Oath -->
+    <label class="oath">
+        <input type="checkbox" id="oathCheck">  
+        I swear to the oath of El De’ah
+    </label>
+
+    <button onclick="attemptLogin()">Login</button>
 </div>
 
+<script src="login.js"></script>
 
-
-<div id="chat-screen" class="hidden">
-    <header>
-        <h3>ShadowChat Room</h3>
-        <button onclick="logout()">Logout</button>
-    </header>
-
-    <div id="messages"></div>
-
-    <div id="controls">
-        <button id="emojiBtn">😊</button>
-        <input id="msgBox" placeholder="Type message..." />
-        <button onclick="sendMessage()">Send</button>
-        <input type="file" id="fileInput" hidden onchange="sendSelectedFile()">
-        <button onclick="document.getElementById('fileInput').click()">📸</button>
-        <button onclick="startVoice()">🎙️</button>
-    </div>
-
-    <div id="emojiPanel" class="hidden"></div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-<script src="app.js"></script>
 </body>
 </html>

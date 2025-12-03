@@ -1,358 +1,49 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>The Invisible Chat — Room</title>
-<style>
-  :root{--bg:#eef2ff;--panel:#fff;--brand:#0b61d6;--muted:#6b7280}
-  body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);height:100vh;display:flex;flex-direction:column}
-  header{background:linear-gradient(90deg,var(--brand),#064a9b);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px}
-  header .me{display:flex;align-items:center;gap:12px}
-  .avatar-sm{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#e6eefc;display:inline-block}
-  .avatar-sm img{width:100%;height:100%;object-fit:cover}
-  .title{font-weight:700}
-  .sub{font-size:12px;color:rgba(255,255,255,0.9)}
-  main{flex:1;display:flex;gap:12px;padding:16px}
-  .left{flex:1;display:flex;flex-direction:column;height:calc(100vh - 120px)}
-  .messages{flex:1;overflow:auto;padding:12px;border-radius:12px;background:linear-gradient(180deg,#fff, #f8fafc);box-shadow:0 8px 24px rgba(2,6,23,0.06)}
-  .msg{max-width:74%;padding:8px 10px;border-radius:10px;margin-bottom:10px;word-wrap:break-word}
-  .msg.me{margin-left:auto;background:#dcfce7}
-  .msg.you{background:#fff}
-  .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
-  .controls{display:flex;align-items:center;gap:10px;padding:12px;background:var(--panel);border-top:1px solid #eef2ff}
-  .controls input[type=text]{flex:1;padding:10px;border-radius:10px;border:1px solid #e6eefc}
-  .icon{cursor:pointer;font-size:20px;padding:8px}
-  .emoji-panel{display:none;padding:10px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(2,6,23,0.06);position:absolute;bottom:86px;left:20px;right:20px;max-height:170px;overflow:auto}
-  .btn{background:var(--brand);color:#fff;padding:10px 12px;border-radius:10px;border:0;cursor:pointer}
-  .small{font-size:13px;color:var(--muted)}
-  .topbar-actions{margin-left:auto;display:flex;gap:8px}
-  .side{width:280px}
-  .panel{background:var(--panel);padding:12px;border-radius:12px;box-shadow:0 6px 20px rgba(2,6,23,0.04)}
-  .member{display:flex;gap:10px;align-items:center;margin-bottom:8px}
-  .member img{width:40px;height:40px;border-radius:50%;object-fit:cover}
-  .member .name{font-weight:600}
-  .footer-actions{display:flex;gap:8px;align-items:center}
-  .file-preview{max-width:240px;border-radius:8px;margin-top:6px}
-  .popup{position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:8px;display:none;z-index:80}
-</style>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <title>The Invisible Chat 🜂</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <!-- WebRTC Recorder -->
+    <script src="https://cdn.jsdelivr.net/npm/recordrtc@5.6.2/RecordRTC.min.js"></script>
 </head>
+
 <body>
-  <div class="popup" id="popup"></div>
 
-  <header>
-    <div class="me">
-      <div class="avatar-sm" id="meAvatar"><img id="meAvatarImg" src="" alt="" style="display:none"></div>
-      <div>
-        <div class="title" id="meName">Anonymous</div>
-        <div class="sub" id="meEmail">not signed</div>
-      </div>
-    </div>
-    <div class="topbar-actions">
-      <button class="btn" id="clearLocal">Clear local messages</button>
-      <button class="btn" id="signOut">Sign out</button>
-    </div>
-  </header>
+<div class="chat-container">
 
-  <main>
-    <div class="left">
-      <div class="messages" id="messages"></div>
-
-      <div class="emoji-panel" id="emojiPanel"></div>
-
-      <div class="controls">
-        <span class="icon" id="emojiBtn">😁</span>
-        <input type="text" id="textInput" placeholder="Message..." />
-        <input type="file" id="fileInput" style="display:none" />
-        <span class="icon" id="fileBtn">📸</span>
-        <span class="icon" id="recordBtn">🎙️</span>
-        <button class="btn" id="sendBtn">➡️</button>
-      </div>
+    <!-- LEFT SIDEBAR (Members List) -->
+    <div class="sidebar">
+        <h3>🟢 Members</h3>
+        <div id="memberList"></div>
     </div>
 
-    <aside class="side">
-      <div class="panel">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong>Members</strong>
+    <!-- MAIN CHAT BOX -->
+    <div class="chat-box">
+        <div id="messages"></div>
+
+        <!-- Message Controls -->
+        <div class="chat-controls">
+            <button onclick="openEmojiPicker()">😁</button>
+            <input type="text" id="msgInput" placeholder="Message...">
+
+            <input type="file" id="fileInput" hidden onchange="sendFile(this)">
+            <button onclick="document.getElementById('fileInput').click()">📸</button>
+
+            <button onclick="startRecording()" id="recordBtn">🎙️</button>
+            <button onclick="sendMessage()" class="sendBtn">➡️</button>
         </div>
-        <div id="members" style="margin-top:12px"></div>
-      </div>
-    </aside>
-  </main>
+    </div>
+</div>
 
-<script>
-/* -----------------------
-  Firebase config (user provided)
-------------------------*/
-const firebaseConfig = {
-  apiKey: "AIzaSyD6T_Vasbdw4oA657ywJcbRVwoZVpIBH3U",
-  authDomain: "the-invisible-chat.firebaseapp.com",
-  projectId: "the-invisible-chat",
-  storageBucket: "the-invisible-chat.firebasestorage.app",
-  messagingSenderId: "930784219484",
-  appId: "1:930784219484:web:9c3c63b8190f6ea2b83199",
-  measurementId: "G-JVHL0SBR10"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const storage = firebase.storage();
+<!-- Emoji Picker -->
+<div id="emojiBox" class="emoji-box"></div>
 
-/* -----------------------
-  Utility: Popup
-------------------------*/
-const popup = (msg, t=2600) => {
-  const el = document.getElementById('popup'); el.textContent = msg; el.style.display='block';
-  setTimeout(()=> el.style.display='none', t);
-};
+<script src="chat.js"></script>
 
-/* -----------------------
-  Auth & Crypto helpers
-  - deriveKey(email, agentKey)
-  - encrypt/decrypt text & blobs (AES-GCM)
-------------------------*/
-async function deriveKey(email, agentKey) {
-  const salt = new TextEncoder().encode(email);
-  const pw = new TextEncoder().encode(agentKey);
-  const baseKey = await crypto.subtle.importKey('raw', pw, 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:250000, hash:'SHA-256'}, baseKey, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
-}
-function buf2b64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
-function b642buf(b64){ const s=atob(b64); const arr=new Uint8Array(s.length); for(let i=0;i<s.length;i++) arr[i]=s.charCodeAt(i); return arr.buffer; }
-
-async function encryptText(key, plain) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const data = new TextEncoder().encode(plain);
-  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, data);
-  return {ciphertext: buf2b64(ct), iv: buf2b64(iv)};
-}
-async function decryptText(key, ciphertextB64, ivB64) {
-  try {
-    const ct = b642buf(ciphertextB64);
-    const iv = b642buf(ivB64);
-    const plainBuf = await crypto.subtle.decrypt({name:'AES-GCM', iv:new Uint8Array(iv)}, key, ct);
-    return new TextDecoder().decode(plainBuf);
-  } catch(e){ console.error('decrypt error', e); throw e; }
-}
-async function encryptBlob(key, arrayBuffer) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, arrayBuffer);
-  return {ciphertext: new Blob([ct]), iv: buf2b64(iv)};
-}
-async function decryptBlob(key, blob, ivB64) {
-  const arrBuf = await blob.arrayBuffer();
-  const iv = b642buf(ivB64);
-  const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:new Uint8Array(iv)}, key, arrBuf);
-  return new Blob([plain]);
-}
-
-/* -----------------------
-  Load user identity from localStorage (set on index.html)
-------------------------*/
-const auth = JSON.parse(localStorage.getItem('invisible_auth') || 'null');
-if(!auth){ popup('No local session found — return to sign in.'); setTimeout(()=>location.href='index.html',1600); }
-let cryptoKey = null;
-let agentKeyHint = localStorage.getItem('invisible_agentKey_hint') || '';
-(async ()=>{
-  try{
-    // We don't have the agent key full in storage (prototype); ask user to input agent key to derive key.
-    const email = auth.email;
-    // ask for agent key quickly (prompt) - for demo we do prompt, in production provide secure input
-    const agentKey = prompt('Enter your agent key to unlock chat (for demo):','£4890##Ais4apple51#');
-    if(!agentKey) { popup('Agent key required'); throw new Error('no key'); }
-    cryptoKey = await deriveKey(email, agentKey);
-    initUserUI(email);
-    listenMessages();
-    publishPresence();
-  }catch(e){ console.error(e); popup('Could not initialize crypto.'); }
-})();
-
-function initUserUI(email){
-  const pic = localStorage.getItem('invisible_profilePic');
-  if(pic) { document.getElementById('meAvatarImg').src=pic; document.getElementById('meAvatarImg').style.display='block'; }
-  document.getElementById('meName').textContent = email.split('@')[0];
-  document.getElementById('meEmail').textContent = email;
-}
-
-/* -----------------------
-  Send message (encrypt -> save to Firestore)
-------------------------*/
-document.getElementById('sendBtn').addEventListener('click', sendMessage);
-document.getElementById('textInput').addEventListener('keydown', (e)=> { if(e.key==='Enter') sendMessage(); });
-
-async function sendMessage(){
-  const txt = document.getElementById('textInput').value.trim();
-  if(!txt) return;
-  try{
-    const enc = await encryptText(cryptoKey, txt);
-    await db.collection('messages').add({
-      type:'text', ciphertext: enc.ciphertext, iv: enc.iv,
-      sender: auth.email, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    // save locally decrypted for persistence
-    saveLocal({type:'text', from:auth.email, text:txt, ts:Date.now()});
-    document.getElementById('textInput').value='';
-  }catch(e){ popup('Send failed'); console.error(e); }
-}
-
-/* File upload (image/video) */
-const fileInput = document.getElementById('fileInput');
-document.getElementById('fileBtn').addEventListener('click', ()=> fileInput.click());
-fileInput.addEventListener('change', async (ev)=>{
-  const f = ev.target.files[0]; if(!f) return;
-  popup('Encrypting & uploading file...');
-  const ab = await f.arrayBuffer();
-  const encBlobObj = await encryptBlob(cryptoKey, ab);
-  // upload encrypted blob directly to storage
-  const storageRef = storage.ref().child('files/'+Date.now()+'_'+(f.name||'upload'));
-  const uploadTask = storageRef.put(encBlobObj.ciphertext);
-  uploadTask.on('state_changed', ()=>{}, err=>{popup('Upload failed');console.error(err)}, async ()=>{
-    const url = await uploadTask.snapshot.ref.getDownloadURL();
-    // save metadata in Firestore (with iv and storage path)
-    await db.collection('messages').add({
-      type:'file', filename:f.name, storagePath:storageRef.fullPath, iv:encBlobObj.iv,
-      sender:auth.email, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    popup('File sent');
-  });
-});
-
-/* Listen for messages (real-time) */
-function listenMessages(){
-  db.collection('messages').orderBy('timestamp','asc').onSnapshot(async snap=>{
-    const container = document.getElementById('messages');
-    container.innerHTML='';
-    for(const doc of snap.docs){
-      const d = doc.data();
-      try{
-        if(d.type==='text'){
-          const plain = await decryptText(cryptoKey, d.ciphertext, d.iv);
-          addMessageDOM({from:d.sender, text:plain, ts:d.timestamp?d.timestamp.toDate().getTime():Date.now()});
-          saveLocal({type:'text', from:d.sender, text:plain, ts:Date.now()});
-        } else if(d.type==='file'){
-          // download encrypted blob from storage then decrypt
-          const ref = storage.ref(d.storagePath);
-          const url = await ref.getDownloadURL();
-          // fetch encrypted bytes
-          const res = await fetch(url);
-          const encBlob = await res.blob();
-          const decBlob = await decryptBlob(cryptoKey, encBlob, d.iv);
-          // create object URL to display or download
-          const objUrl = URL.createObjectURL(decBlob);
-          addMessageDOM({from:d.sender, fileUrl:objUrl, filename:d.filename, ts:Date.now()});
-          saveLocal({type:'file', from:d.sender, filename:d.filename, fileUrl:objUrl, ts:Date.now()});
-        }
-      }catch(e){
-        // couldn't decrypt (different key) — show fallback
-        addMessageDOM({from:d.sender, text:'[Encrypted message — could not decrypt]', ts:Date.now(), locked:true});
-      }
-    }
-    container.scrollTop = container.scrollHeight;
-  });
-}
-
-/* addMessageDOM */
-function addMessageDOM({from, text, fileUrl, filename, ts, locked}) {
-  const el = document.createElement('div');
-  el.className = 'msg '+(from===auth.email ? 'me' : 'you');
-  if(!from) from='unknown';
-  const meta = document.createElement('div'); meta.className='meta small'; meta.textContent = `${from} • ${new Date(ts).toLocaleTimeString()}`;
-  el.appendChild(meta);
-  if(locked){ const p=document.createElement('div'); p.textContent=text; el.appendChild(p); }
-  else if(text){ const p=document.createElement('div'); p.textContent=text; el.appendChild(p); }
-  else if(fileUrl){
-    const a = document.createElement('a'); a.href=fileUrl; a.target='_blank';
-    const img = document.createElement('img'); img.src=fileUrl; img.className='file-preview';
-    a.appendChild(img); el.appendChild(a);
-    const fn = document.createElement('div'); fn.className='small'; fn.textContent = filename || 'file';
-    el.appendChild(fn);
-  }
-  document.getElementById('messages').appendChild(el);
-}
-
-/* Save decrypted messages locally (persist per-device) */
-function saveLocal(obj){
-  const key='invisible_local_msgs';
-  const arr = JSON.parse(localStorage.getItem(key) || '[]');
-  arr.push(obj); 
-  localStorage.setItem(key, JSON.stringify(arr.slice(-500))); // keep last 500
-}
-
-/* load local into UI on start */
-(function loadLocalUI(){
-  const arr = JSON.parse(localStorage.getItem('invisible_local_msgs')||'[]');
-  for(const m of arr) addMessageDOM(m);
-})();
-
-/* emoji panel */
-const emojiBtn = document.getElementById('emojiBtn'), emojiPanel = document.getElementById('emojiPanel');
-emojiBtn.addEventListener('click', ()=>{
-  if(emojiPanel.innerHTML===''){
-    const list = '😀😁😂🤣😃😄😉😊😍😘😗😙🙂🤗🤩🤔😐😶🙄😏😣😥😮😯😪🥱';
-    for(const ch of list){ const s=document.createElement('span'); s.textContent=ch; s.style.fontSize='20px'; s.style.margin='6px'; s.style.cursor='pointer';
-      s.onclick=()=>{ document.getElementById('textInput').value += ch; };
-      emojiPanel.appendChild(s);
-    }
-  }
-  emojiPanel.style.display = emojiPanel.style.display==='none' ? 'block' : 'none';
-});
-
-/* presence & members: simple approach — list last 20 unique senders from messages */
-async function publishPresence(){
-  // optionally write to a 'presence' doc — for simplicity we will use messages to infer members.
-  setInterval(()=>{ /* keep alive if needed */ }, 30000);
-  updateMembersList();
-}
-async function updateMembersList(){
-  const snap = await db.collection('messages').orderBy('timestamp','desc').limit(200).get();
-  const seen = new Map();
-  snap.forEach(d=>{ const s = d.data().sender; if(s && !seen.has(s)) seen.set(s,true); });
-  const container = document.getElementById('members'); container.innerHTML='';
-  for(const k of seen.keys()){
-    const div=document.createElement('div'); div.className='member';
-    const img=document.createElement('img'); const lp=localStorage.getItem('invisible_profilePic')||'';
-    img.src = (k===auth.email && lp) ? lp : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"></svg>';
-    const info=document.createElement('div'); info.innerHTML=`<div class="name">${k.split('@')[0]}</div><div class="small">${k}</div>`;
-    div.appendChild(img); div.appendChild(info); container.appendChild(div);
-  }
-}
-
-/* sign out & clear local messages */
-document.getElementById('signOut').addEventListener('click', ()=> {
-  localStorage.removeItem('invisible_auth'); popup('Signed out.'); setTimeout(()=>location.href='index.html',900);
-});
-document.getElementById('clearLocal').addEventListener('click', ()=> {
-  if(confirm('Clear local messages only? This does not remove messages from the chat (server).')) {
-    localStorage.removeItem('invisible_local_msgs'); document.getElementById('messages').innerHTML=''; popup('Local messages cleared');
-  }
-});
-
-/* record audio (simple: uses MediaRecorder, uploads encrypted audio blob) */
-document.getElementById('recordBtn').addEventListener('click', async ()=>{
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return popup('Recording not supported here.');
-  try{
-    popup('Recording 6s voice note...'); 
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    const rec = new MediaRecorder(stream);
-    const chunks=[];
-    rec.ondataavailable = e=>chunks.push(e.data);
-    rec.start();
-    setTimeout(()=>rec.stop(), 6000);
-    rec.onstop = async ()=> {
-      const blob = new Blob(chunks, {type:'audio/webm'});
-      // encrypt & upload
-      const ab = await blob.arrayBuffer();
-      const encObj = await encryptBlob(cryptoKey, ab);
-      const ref = storage.ref().child('files/voice_'+Date.now()+'.webm');
-      ref.put(encObj.ciphertext).then(async snap=>{
-        await db.collection('messages').add({type:'file', filename:'voice_note.webm', storagePath:ref.fullPath, iv:encObj.iv, sender:auth.email, timestamp: firebase.firestore.FieldValue.serverTimestamp()});
-        popup('Voice note sent');
-      }).catch(e=>popup('Upload failed'));
-    };
-  }catch(e){ console.error(e); popup('Recording failed'); }
-});
-</script>
 </body>
 </html>
